@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion de Présence - KABOUCARIA 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-inner">
+        <h1 class="logo">GESTION DE PRÉSENCE<br><span>KABOUCARIA 2026</span></h1>
+        <nav class="nav">
+          <button type="button" class="nav-btn active" data-page="dashboard">Dashboard</button>
+          <button type="button" class="nav-btn" data-page="fiche">Fiche de présence</button>
+          <button type="button" class="nav-btn" data-page="paiement">Fiche paiement salaire</button>
+          <button type="button" class="nav-btn" data-page="employes">Employés</button>
+          <button type="button" class="nav-btn" data-page="ajouter">Ajouter employé</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Dashboard -->
+      <section id="page-dashboard" class="page active">
+        <h2 class="page-title">Dashboard</h2>
+        <div class="dashboard-cards">
+          <div class="card stat-card">
+            <div class="card-icon total">👥</div>
+            <div class="card-content">
+              <span class="card-label">Total employés</span>
+              <span class="card-value" id="stat-total">0</span>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="card-icon presence">✓</div>
+            <div class="card-content">
+              <span class="card-label">Présents aujourd'hui</span>
+              <span class="card-value" id="stat-presents">0</span>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="card-icon absence">✕</div>
+            <div class="card-content">
+              <span class="card-label">Absents ce mois</span>
+              <span class="card-value" id="stat-absences">0</span>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="card-icon rate">%</div>
+            <div class="card-content">
+              <span class="card-label">Taux d'absentéisme</span>
+              <span class="card-value" id="stat-taux">0%</span>
+            </div>
+          </div>
+        </div>
+        <div class="dashboard-charts">
+          <div class="card chart-card">
+            <h3>Présence par jour (mois en cours)</h3>
+            <div class="chart-container">
+              <canvas id="chart-presence-jours" width="400" height="200"></canvas>
+            </div>
+          </div>
+          <div class="card chart-card">
+            <h3>Répartition par statut</h3>
+            <div class="chart-container">
+              <canvas id="chart-repartition" width="300" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="card table-card">
+          <h3>Résumé mensuel par employé</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="dashboard-table">
+              <thead>
+                <tr>
+                  <th>Employé</th>
+                  <th>Service</th>
+                  <th>Présence</th>
+                  <th>Absence</th>
+                  <th>Congé</th>
+                  <th>Taux absentéisme</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Fiche de présence -->
+      <section id="page-fiche" class="page">
+        <h2 class="page-title">Fiche de présence <span id="fiche-mois-titre"></span></h2>
+        <div class="fiche-controls">
+          <label>Mois : <input type="month" id="fiche-mois" /></label>
+          <p class="legend">
+            <span class="leg P">P</span> Présence
+            <span class="leg WE">WE</span> Weekend
+            <span class="leg R">R</span> Repos (vendredi)
+            <span class="leg C">C</span> Congé
+            <span class="leg A">A</span> Absence
+          </p>
+        </div>
+        <div class="fiche-scroll">
+          <table class="fiche-table" id="fiche-table">
+            <thead>
+              <tr id="fiche-thead-days">
+                <th class="col-nom sticky">Nom complet</th>
+                <th class="col-service sticky">Service</th>
+                <th class="col-presence">Présence</th>
+                <th class="col-absence">Absence</th>
+                <th class="col-conge">Congé</th>
+                <th class="col-taux">Taux absentéisme</th>
+                <th class="col-salaire-paye">Salaire à payer</th>
+                <!-- Jours 1-31 générés en JS -->
+              </tr>
+            </thead>
+            <tbody id="fiche-tbody"></tbody>
+          </table>
+        </div>
+        <div id="modal-jour" class="modal hidden">
+          <div class="modal-content">
+            <h3>Jour <span id="modal-jour-num"></span></h3>
+            <label>Statut <select id="modal-statut"><option value="P">P - Présence</option><option value="WE">WE - Weekend</option><option value="R">R - Repos (vendredi)</option><option value="C">C - Congé</option><option value="A">A - Absence</option></select></label>
+            <label>Heure d'arrivée <input type="time" id="modal-arrivee" /></label>
+            <label>Heure de départ <input type="time" id="modal-depart" /></label>
+            <button type="button" class="btn btn-primary" id="modal-save">Enregistrer</button>
+            <button type="button" class="btn btn-secondary" id="modal-close">Fermer</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Fiche paiement salaire -->
+      <section id="page-paiement" class="page">
+        <h2 class="page-title">Fiche paiement salaire <span id="paiement-mois-titre"></span></h2>
+        <p class="page-desc">Pour tous les employés : <strong>30 000 GNF</strong> sont retenus sur le salaire par jour d'absence durant le mois. Salaire à payer = Salaire mensuel − (Nombre d'absences × 30 000 GNF).</p>
+        <div class="fiche-controls">
+          <label>Mois : <input type="month" id="paiement-mois" /></label>
+        </div>
+        <div class="card table-card">
+          <div class="table-wrap">
+            <table class="data-table" id="paiement-table">
+              <thead>
+                <tr>
+                  <th>Employé</th>
+                  <th>Service</th>
+                  <th>Jours ouvrés</th>
+                  <th>Présence</th>
+                  <th>Absence</th>
+                  <th>Congé</th>
+                  <th>Salaire mensuel</th>
+                  <th>Retenue (absences)</th>
+                  <th>Salaire à payer</th>
+                </tr>
+              </thead>
+              <tbody id="paiement-tbody"></tbody>
+              <tfoot id="paiement-tfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Liste des employés -->
+      <section id="page-employes" class="page">
+        <h2 class="page-title">Liste des employés</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nom complet</th>
+                <th>Service</th>
+                <th>Salaire</th>
+                <th>Numéro téléphone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="employes-tbody"></tbody>
+          </table>
+        </div>
+        <div id="modal-edit-employe" class="modal hidden">
+          <div class="modal-content">
+            <h3>Modifier l'employé</h3>
+            <input type="hidden" id="edit-employe-id" value="">
+            <div class="form-group">
+              <label for="edit-nom">Nom complet *</label>
+              <input type="text" id="edit-nom" required placeholder="Ex: Daniel TOUNKARA">
+            </div>
+            <div class="form-group">
+              <label for="edit-service">Service *</label>
+              <input type="text" id="edit-service" required placeholder="Ex: Orange Money">
+            </div>
+            <div class="form-group">
+              <label for="edit-salaire">Salaire (mensuel)</label>
+              <input type="number" id="edit-salaire" min="0" step="1" placeholder="Ex: 250000">
+            </div>
+            <div class="form-group">
+              <label for="edit-telephone">Numéro téléphone</label>
+              <input type="tel" id="edit-telephone" placeholder="Ex: +224 6XX XX XX XX">
+            </div>
+            <button type="button" class="btn btn-primary" id="edit-employe-save">Enregistrer les modifications</button>
+            <button type="button" class="btn btn-secondary" id="edit-employe-cancel">Annuler</button>
+            <p id="edit-form-message" class="form-message"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ajouter employé -->
+      <section id="page-ajouter" class="page">
+        <h2 class="page-title">Ajouter un employé</h2>
+        <form id="form-employe" class="form-card card">
+          <div class="form-group">
+            <label for="nom">Nom complet *</label>
+            <input type="text" id="nom" required placeholder="Ex: Daniel TOUNKARA">
+          </div>
+          <div class="form-group">
+            <label for="service">Service *</label>
+            <input type="text" id="service" required placeholder="Ex: Orange Money, Directeur Général">
+          </div>
+          <div class="form-group">
+            <label for="salaire">Salaire (mensuel)</label>
+            <input type="number" id="salaire" min="0" step="1" placeholder="Ex: 250000">
+          </div>
+          <div class="form-group">
+            <label for="telephone">Numéro téléphone</label>
+            <input type="tel" id="telephone" placeholder="Ex: +224 6XX XX XX XX">
+          </div>
+          <button type="submit" class="btn btn-primary">Enregistrer l'employé</button>
+          <p id="form-message" class="form-message"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
