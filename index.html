@@ -140,6 +140,7 @@
         <p class="page-desc">Pour tous les employés : <strong>30 000 GNF</strong> sont retenus sur le salaire par jour d'absence durant le mois. Salaire à payer = Salaire mensuel − (Nombre d'absences × 30 000 GNF).</p>
         <div class="fiche-controls">
           <label>Mois : <input type="month" id="paiement-mois" /></label>
+          <button type="button" class="btn btn-primary" id="btn-generer-tous-bulletins">Générer tous les bulletins PDF</button>
         </div>
         <div class="card table-card">
           <div class="table-wrap">
@@ -155,6 +156,7 @@
                   <th>Salaire mensuel</th>
                   <th>Retenue (absences)</th>
                   <th>Salaire à payer</th>
+                  <th>Bulletin</th>
                 </tr>
               </thead>
               <tbody id="paiement-tbody"></tbody>
@@ -234,6 +236,7 @@
       </section>
     </main>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

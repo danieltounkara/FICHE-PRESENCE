@@ -410,6 +410,7 @@
           <td>${formatSalaire(salaireMensuel)}</td>
           <td class="retenue">${formatSalaire(retenue)}</td>
           <td class="salaire-paye">${formatSalaire(salaireAPayer)}</td>
+          <td><button type="button" class="btn btn-primary btn-sm btn-bulletin-pdf" data-emp-id="${escapeHtml(emp.id)}">PDF</button></td>
         </tr>
       `;
     }).join('');
@@ -420,9 +421,201 @@
         <td>—</td>
         <td class="retenue"><strong>${formatSalaire(totalRetenue)}</strong></td>
         <td class="salaire-paye"><strong>${formatSalaire(totalSalaireAPayer)}</strong></td>
+        <td></td>
       </tr>
     `;
+
+    document.getElementById('paiement-tbody').querySelectorAll('.btn-bulletin-pdf').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const empId = this.getAttribute('data-emp-id');
+        const emp = getEmployes().find(e => e.id === empId);
+        if (emp) generateBulletinPDF(emp, year, month);
+      });
+    });
   }
+
+  function generateBulletinPDF(emp, year, month) {
+    if (typeof window.jspdf === 'undefined') {
+      alert('Bibliothèque PDF non chargée. Vérifiez votre connexion.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = 210;
+    const pageH = 297;
+    const margin = 14;
+    const contentW = pageW - margin * 2;
+    const lineH = 6;
+    const boxPad = 5;
+
+    const stats = computeStats(emp.id, year, month);
+    const salaireMensuel = Number(emp.salaire) || 0;
+    const salaireAPayer = computeSalaireAPayer(emp, year, month);
+    const retenue = salaireMensuel - salaireAPayer;
+    const moisLibelle = MOIS_NOMS[month - 1] + ' ' + year;
+    const dateEdition = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    function drawBox(x, y, w, h, title, fillHeader) {
+      doc.setDrawColor(60, 60, 60);
+      doc.setLineWidth(0.4);
+      doc.rect(x, y, w, h);
+      if (title) {
+        doc.setFillColor(26, 61, 50);
+        doc.rect(x, y, w, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text(title, x + boxPad, y + 5.5);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+      }
+    }
+
+    let y = margin;
+
+    // —— Encadrement principal de la page ——
+    doc.setDrawColor(40, 40, 40);
+    doc.setLineWidth(0.8);
+    doc.rect(margin, margin, contentW, pageH - margin * 2);
+
+    // —— En-tête : Etablissements Kaboucaria et Fils (référence capture) ——
+    const headerH = 38;
+    doc.setDrawColor(80, 80, 80);
+    doc.setLineWidth(0.3);
+    doc.rect(margin + 2, y + 2, contentW - 4, headerH);
+    doc.setFillColor(248, 248, 248);
+    doc.rect(margin + 2, y + 2, contentW - 4, headerH, 'F');
+    doc.setDrawColor(180, 180, 180);
+    doc.rect(margin + 2, y + 2, contentW - 4, headerH);
+
+    y += 6;
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 40);
+    doc.setFont(undefined, 'normal');
+    doc.text('Nom :', margin + 6, y);
+    doc.setFont(undefined, 'bold');
+    doc.text('ETABLISSEMENTS KABOUKARIA ET FILS', margin + 22, y);
+    doc.setFont(undefined, 'normal');
+    doc.setDrawColor(100, 100, 100);
+    doc.line(margin + 6, y + 1.5, margin + contentW - 10, y + 1.5);
+    y += 7;
+    doc.text('Adresse :', margin + 6, y);
+    doc.text('SIGUIRI CENTRE SIGUIRIKOURA II', margin + 28, y);
+    y += 6;
+    doc.text('NIF :', margin + 6, y);
+    doc.text('661 827 782', margin + 18, y);
+    doc.text('Clé TVA :', margin + 55, y);
+    doc.setFont(undefined, 'bold');
+    doc.text('9C', margin + 72, y);
+    doc.setFont(undefined, 'normal');
+    y += 6;
+    doc.text('RCCM :', margin + 6, y);
+    doc.text('GN.TCC.2023.A.00518', margin + 22, y);
+    y += 6;
+    doc.text('TEL :', margin + 6, y);
+    doc.text('628 559 934', margin + 18, y);
+    doc.setTextColor(0, 0, 0);
+    y += 12;
+
+    // —— Bandeau BULLETIN DE SALAIRE ——
+    doc.setFillColor(26, 61, 50);
+    doc.rect(margin + 2, y, contentW - 4, 12, 'F');
+    doc.setDrawColor(46, 160, 67);
+    doc.setLineWidth(0.5);
+    doc.rect(margin + 2, y, contentW - 4, 12);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    var titreW = (doc.getTextDimensions && doc.getTextDimensions('BULLETIN DE SALAIRE').w) || 55;
+    doc.text('BULLETIN DE SALAIRE', margin + (contentW - 4) / 2 - titreW / 2, y + 8.5);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(0, 0, 0);
+    y += 16;
+
+    // —— Période et date d'édition ——
+    drawBox(margin + 2, y, contentW - 4, 18, null);
+    y += 6;
+    doc.setFontSize(10);
+    doc.text('Période : ' + moisLibelle, margin + 8, y);
+    doc.text('Date d\'édition : ' + dateEdition, margin + contentW / 2, y);
+    y += 14;
+
+    // —— Encadré Employé ——
+    const empBoxH = 22;
+    drawBox(margin + 2, y, contentW - 4, empBoxH, '  Employé', true);
+    y += 10;
+    doc.setFontSize(8); 
+    doc.text('Nom : ' + emp.nomComplet, margin + 8, y);
+    y += lineH;
+    doc.text('Service : ' + (emp.service || '—'), margin + 8, y);
+    y += empBoxH - 16 + 4;
+
+    // —— Encadré Détail du mois ——
+    const detailH = 38;
+    drawBox(margin + 2, y, contentW - 4, detailH, '  Détail du mois', true);
+    y += 10;
+    doc.setFontSize(9);
+    doc.text('Jours ouvrés (hors vendredis et week-ends) : ' + stats.joursOuvrables, margin + 8, y);
+    y += lineH;
+    doc.text('Jours de présence : ' + stats.presence, margin + 8, y);
+    y += lineH;
+    doc.text('Jours d\'absence : ' + stats.absence + '  (retenue 30 000 GNF / jour d\'absence)', margin + 8, y);
+    y += lineH;
+    doc.text('Jours de congé : ' + stats.conge, margin + 8, y);
+    y += detailH - 28 + 4;
+
+    // —— Encadré Récapitulatif salaire ——
+    const recapH = 38;
+    drawBox(margin + 2, y, contentW - 4, recapH, '  Récapitulatif salaire', true);
+    y += 10;
+    doc.setFontSize(10);
+    doc.text('Salaire mensuel brut ............................ ' + formatSalaire(salaireMensuel) + ' GNF', margin + 4, y);
+    y += lineH + 2;
+    doc.setTextColor(180, 50, 50);
+    doc.text('Retenue (absences) ............................. - ' + formatSalaire(retenue) + ' GNF', margin + 6, y);
+    doc.setTextColor(0, 0, 0);
+    y += lineH + 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin + 8, y - 2, margin + contentW - 12, y - 2);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(26, 61, 50);
+    doc.text('SALAIRE NET À PAYER ......................... ' + formatSalaire(salaireAPayer) + ' GNF', margin + 8, y + 4);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    y += recapH - 22 + 6;
+
+    // —— Pied de page ——
+    y = pageH - margin - 18;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin + 8, y - 4, margin + contentW - 8, y - 4);
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Document généré automatiquement — Gestion de Présence KABOUCARIA 2026.', margin + 8, y + 2);
+    doc.text('Les vendredis sont des jours de repos et ne sont pas comptés comme jours ouvrés.', margin + 8, y + 7);
+    doc.setTextColor(0, 0, 0);
+
+    const fileName = 'Bulletin_' + (emp.nomComplet || 'Employe').replace(/\s+/g, '_') + '_' + moisLibelle.replace(/\s+/g, '_') + '.pdf';
+    doc.save(fileName);
+  }
+
+  document.getElementById('btn-generer-tous-bulletins').addEventListener('click', function () {
+    const moisInput = document.getElementById('paiement-mois');
+    if (!moisInput.value) return;
+    const [year, month] = moisInput.value.split('-').map(Number);
+    const employes = getEmployes();
+    if (employes.length === 0) {
+      alert('Aucun employé.');
+      return;
+    }
+    employes.forEach((emp, i) => {
+      setTimeout(function () {
+        generateBulletinPDF(emp, year, month);
+      }, i * 600);
+    });
+  });
 
   document.getElementById('paiement-mois').addEventListener('change', renderPaiement);
 
