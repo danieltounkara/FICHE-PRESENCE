@@ -143,7 +143,9 @@
   }
 
   function formatSalaire(n) {
-    return Number(n).toLocaleString('fr-FR');
+    const value = Math.round(Number(n) || 0);
+    const str = String(value);
+    return str.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
 
   function generateId() {
@@ -185,6 +187,26 @@
     });
   });
 
+  function animateStatValue(el, newValue, suffix = '') {
+    if (!el) return;
+    const text = el.textContent || '0';
+    const current = parseInt(text.replace(/\D/g, ''), 10) || 0;
+    const target = Number(newValue) || 0;
+    if (current === target) {
+      el.textContent = (suffix && target === 0) ? '0' + suffix : target + suffix;
+      return;
+    }
+    const duration = 450;
+    const startTime = performance.now();
+    function frame(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const value = Math.round(current + (target - current) * progress);
+      el.textContent = value + suffix;
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
   function renderDashboard() {
     const employes = getEmployes();
     const now = new Date();
@@ -218,10 +240,11 @@
       `;
     });
 
-    document.getElementById('stat-total').textContent = employes.length;
-    document.getElementById('stat-presents').textContent = totalPresents;
-    document.getElementById('stat-absences').textContent = totalAbsences;
-    document.getElementById('stat-taux').textContent = employes.length ? Math.round(totalTaux / employes.length) + '%' : '0%';
+    animateStatValue(document.getElementById('stat-total'), employes.length);
+    animateStatValue(document.getElementById('stat-presents'), totalPresents);
+    animateStatValue(document.getElementById('stat-absences'), totalAbsences);
+    const tauxMoyen = employes.length ? Math.round(totalTaux / employes.length) : 0;
+    animateStatValue(document.getElementById('stat-taux'), tauxMoyen, '%');
     document.getElementById('dashboard-tbody').innerHTML = rows.join('');
 
     drawDashboardCharts(year, month);
@@ -350,7 +373,7 @@
           <span>${stats.taux}%</span>
           <div class="taux-bar"><div class="taux-bar-fill" style="width:${Math.min(stats.taux, 100)}%"></div></div>
         </td>
-        <td class="col-salaire-paye">${formatSalaire(salaireAPayer)}</td>
+        <td class="col-salaire-paye">${formatSalaire(salaireAPayer)} FG</td>
       `;
       for (let d = 1; d <= days; d++) {
         const data = getPresenceDay(emp.id, year, month, d);
@@ -407,9 +430,9 @@
           <td>${stats.presence}</td>
           <td>${stats.absence}</td>
           <td>${stats.conge}</td>
-          <td>${formatSalaire(salaireMensuel)}</td>
-          <td class="retenue">${formatSalaire(retenue)}</td>
-          <td class="salaire-paye">${formatSalaire(salaireAPayer)}</td>
+          <td>${formatSalaire(salaireMensuel)} FG</td>
+          <td class="retenue">${formatSalaire(retenue)} FG</td>
+          <td class="salaire-paye">${formatSalaire(salaireAPayer)} FG</td>
           <td><button type="button" class="btn btn-primary btn-sm btn-bulletin-pdf" data-emp-id="${escapeHtml(emp.id)}">PDF</button></td>
         </tr>
       `;
@@ -419,8 +442,8 @@
       <tr class="total-row">
         <td colspan="6"><strong>Total</strong></td>
         <td>—</td>
-        <td class="retenue"><strong>${formatSalaire(totalRetenue)}</strong></td>
-        <td class="salaire-paye"><strong>${formatSalaire(totalSalaireAPayer)}</strong></td>
+        <td class="retenue"><strong>${formatSalaire(totalRetenue)} FG</strong></td>
+        <td class="salaire-paye"><strong>${formatSalaire(totalSalaireAPayer)} FG</strong></td>
         <td></td>
       </tr>
     `;
@@ -432,6 +455,164 @@
         if (emp) generateBulletinPDF(emp, year, month);
       });
     });
+  }
+
+  function generateListePaiementPDF(year, month) {
+    if (typeof window.jspdf === 'undefined') {
+      alert('Bibliothèque PDF non chargée. Vérifiez votre connexion.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = 210;
+    const pageH = 297;
+    const margin = 12;
+    const contentW = pageW - margin * 2;
+    const lineH = 6;
+
+    const employes = getEmployes();
+    const moisLibelle = MOIS_NOMS[month - 1] + ' ' + year;
+    const dateEdition = new Date().toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    let y = margin;
+
+    // Bandeau entête entreprise (comme la capture)
+    const headerH = 30;
+    doc.setDrawColor(160, 160, 160);
+    doc.setLineWidth(0.3);
+    doc.setFillColor(230, 230, 230);
+    doc.rect(margin + 2, y + 2, contentW - 4, headerH, 'F');
+    doc.setDrawColor(120, 120, 120);
+    doc.rect(margin + 2, y + 2, contentW - 4, headerH);
+
+    y += 8;
+    doc.setFontSize(9);
+    doc.setTextColor(20, 20, 20);
+    doc.setFont(undefined, 'normal');
+    doc.text('Nom :', margin + 4, y);
+    doc.setFont(undefined, 'bold');
+    doc.text('ETABLISSEMENTS KABOUKARIA ET FILS', margin + 22, y);
+    doc.setFont(undefined, 'normal');
+    y += lineH;
+    doc.text('Adresse :', margin + 4, y);
+    doc.text('SIGUIRI CENTRE SIGUIRIKOURA II', margin + 28, y);
+    y += lineH;
+    doc.text('NIF :', margin + 4, y);
+    doc.text('661 827 782', margin + 18, y);
+    doc.text('Clé TVA :', margin + 55, y);
+    doc.setFont(undefined, 'bold');
+    doc.text('9C', margin + 72, y);
+    doc.setFont(undefined, 'normal');
+    y += lineH;
+    doc.text('RCCM :', margin + 4, y);
+    doc.text('GN.TCC.2023.A.00518', margin + 22, y);
+    y += lineH;
+    doc.text('TEL :', margin + 4, y);
+    doc.text('628 559 934', margin + 18, y);
+
+    // Titre de la liste + infos de période
+    y += lineH + 2;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(10, 40, 30);
+    doc.text('FICHE PAIEMENT SALAIRE – LISTE GLOBALE', margin, y);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text('Mois : ' + moisLibelle, margin, y + lineH);
+    doc.text('Édité le : ' + dateEdition, margin + contentW - 55, y + lineH);
+    y += lineH * 2;
+
+    // Ligne de séparation
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, margin + contentW, y);
+    y += lineH * 0.7;
+
+    // En-têtes de colonnes avec fond gris
+    doc.setFillColor(245, 245, 245);
+    const headerY = y - 4;
+    doc.rect(margin, headerY, contentW, lineH + 2, 'F');
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(20, 20, 20);
+    doc.text('Employé', margin + 1, y);
+    doc.text('Service', margin + 50, y);
+    doc.text('J. ouv.', margin + 90, y);
+    doc.text('P', margin + 108, y);
+    doc.text('A', margin + 123, y);
+    doc.text('C', margin + 138, y);
+    doc.text('Salaire (FG)', margin + 158, y);
+    doc.text('Retenue (FG)', margin + 178, y);
+    doc.text('Net (FG)', margin + 198, y);
+    y += lineH;
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(20, 20, 20);
+
+    let totalRetenue = 0;
+    let totalNet = 0;
+
+    employes.forEach((emp, index) => {
+      const stats = computeStats(emp.id, year, month);
+      const salaireMensuel = Number(emp.salaire) || 0;
+      const salaireAPayer = computeSalaireAPayer(emp, year, month);
+      const retenue = salaireMensuel - salaireAPayer;
+      totalRetenue += retenue;
+      totalNet += salaireAPayer;
+
+      if (y > pageH - margin - 20) {
+        doc.addPage();
+        y = margin + 10;
+      }
+
+      // fine ligne de séparation sous chaque rangée
+      doc.setDrawColor(235, 235, 235);
+      doc.setLineWidth(0.12);
+      doc.line(margin, y + 1.5, margin + contentW, y + 1.5);
+
+      doc.text(String(emp.nomComplet || ''), margin + 1, y);
+      doc.text(String(emp.service || ''), margin + 50, y);
+      doc.text(String(stats.joursOuvrables), margin + 90, y);
+      doc.text(String(stats.presence), margin + 108, y);
+      doc.text(String(stats.absence), margin + 123, y);
+      doc.text(String(stats.conge), margin + 138, y);
+      doc.text(formatSalaire(salaireMensuel), margin + 158, y, { align: 'right' });
+      doc.text(formatSalaire(retenue), margin + 178, y, { align: 'right' });
+      doc.text(formatSalaire(salaireAPayer), margin + 198, y, { align: 'right' });
+      y += lineH;
+    });
+
+    // Bloc de synthèse des totaux
+    if (y > pageH - margin - 30) {
+      doc.addPage();
+      y = margin + 10;
+    }
+    y += lineH;
+    const boxH = lineH * 3.2;
+    doc.setFillColor(242, 248, 245);
+    doc.setDrawColor(180, 210, 190);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, y - lineH, contentW, boxH, 'F');
+
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(10, 40, 30);
+    doc.text('Synthèse des montants', margin + 2, y - 1);
+
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    y += 2;
+    doc.text('Total retenues (FG) :', margin + 4, y);
+    doc.text(formatSalaire(totalRetenue), margin + contentW - 10, y, { align: 'right' });
+    y += lineH;
+    doc.text('Total salaires à payer (FG) :', margin + 4, y);
+    doc.text(formatSalaire(totalNet), margin + contentW - 10, y, { align: 'right' });
+
+    doc.save(`liste_paiement_${year}_${String(month).padStart(2, '0')}.pdf`);
   }
 
   function generateBulletinPDF(emp, year, month) {
@@ -601,6 +782,20 @@
     doc.save(fileName);
   }
 
+  // Bouton : liste globale en PDF (fiche paiement)
+  const btnListePaiement = document.getElementById('btn-liste-paiement-pdf');
+  if (btnListePaiement) {
+    btnListePaiement.addEventListener('click', function () {
+      const moisInput = document.getElementById('paiement-mois');
+      const now = new Date();
+      if (!moisInput.value) {
+        moisInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      }
+      const [year, month] = moisInput.value.split('-').map(Number);
+      generateListePaiementPDF(year, month);
+    });
+  }
+
   document.getElementById('btn-generer-tous-bulletins').addEventListener('click', function () {
     const moisInput = document.getElementById('paiement-mois');
     if (!moisInput.value) return;
@@ -665,13 +860,35 @@
   });
 
   function renderEmployes() {
-    const employes = getEmployes();
+    const searchInput = document.getElementById('employes-search');
+    const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    let employes = getEmployes();
+
+    // tri alphabétique par nom complet
+    employes = employes.slice().sort((a, b) => {
+      const na = (a.nomComplet || '').toLowerCase();
+      const nb = (b.nomComplet || '').toLowerCase();
+      if (na < nb) return -1;
+      if (na > nb) return 1;
+      return 0;
+    });
+
+    // filtre recherche
+    const filtered = query
+      ? employes.filter(emp => {
+          const nom = (emp.nomComplet || '').toLowerCase();
+          const service = (emp.service || '').toLowerCase();
+          const tel = (emp.telephone || '').toLowerCase();
+          return nom.includes(query) || service.includes(query) || tel.includes(query);
+        })
+      : employes;
+
     const tbody = document.getElementById('employes-tbody');
-    tbody.innerHTML = employes.map(emp => `
+    tbody.innerHTML = filtered.map(emp => `
       <tr>
         <td>${escapeHtml(emp.nomComplet)}</td>
         <td>${escapeHtml(emp.service)}</td>
-        <td>${formatSalaire(emp.salaire || 0)}</td>
+        <td>${formatSalaire(emp.salaire || 0)} FG</td>
         <td>${escapeHtml(emp.telephone || '')}</td>
         <td>
           <button type="button" class="btn btn-edit btn-sm" data-edit="${escapeHtml(emp.id)}">Modifier</button>
@@ -750,6 +967,20 @@
   document.getElementById('modal-edit-employe').addEventListener('click', function (e) {
     if (e.target === this) this.classList.add('hidden');
   });
+
+  // Recherche en temps réel dans la liste des employés
+  const employesSearch = document.getElementById('employes-search');
+  if (employesSearch) {
+    employesSearch.addEventListener('input', () => {
+      renderEmployes();
+    });
+  }
+
+  // Année dynamique dans le pied de page
+  const footerYear = document.getElementById('footer-year');
+  if (footerYear) {
+    footerYear.textContent = new Date().getFullYear();
+  }
 
   document.getElementById('form-employe').addEventListener('submit', function (e) {
     e.preventDefault();

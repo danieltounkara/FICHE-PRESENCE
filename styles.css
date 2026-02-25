@@ -248,9 +248,55 @@ body::before {
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  transition: transform var(--duration-fast);
+  transition: transform var(--duration-fast), color var(--duration-fast), text-shadow var(--duration-fast);
 }
-.stat-card:hover .card-value { transform: scale(1.02); }
+.stat-card:hover .card-value {
+  transform: scale(1.03);
+  color: var(--accent-light);
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* halo animé derrière les cartes du dashboard */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 10% 0%, rgba(46,160,67,0.24), transparent 55%);
+  opacity: 0;
+  transform: translate3d(-40%, 0, 0);
+  transition: opacity 0.4s var(--ease-out), transform 0.5s var(--ease-out);
+  pointer-events: none;
+}
+.stat-card:hover::after {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* animation douce sur les barres de taux dans le tableau du dashboard */
+.taux-bar {
+  position: relative;
+  overflow: hidden;
+}
+.taux-bar-fill {
+  position: relative;
+}
+.taux-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255,255,255,0.25), transparent 60%);
+  transform: translateX(-100%);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
 
 /* ---- Charts ---- */
 .dashboard-charts {
@@ -327,6 +373,89 @@ body::before {
 .data-table .retenue { color: var(--danger); font-weight: 500; }
 .data-table .salaire-paye { color: var(--accent-light); font-weight: 600; }
 
+/* ---- Footer ---- */
+.app-footer {
+  margin-top: 1.5rem;
+  padding: 1rem 1.5rem 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(46,160,67,0.32), transparent 55%),
+    radial-gradient(circle at top right, rgba(88,166,255,0.28), transparent 55%),
+    linear-gradient(180deg, #05070b 0%, #05070b 40%, #020307 100%);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 -10px 32px rgba(0,0,0,0.7);
+  position: relative;
+}
+.footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+  align-items: flex-start;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.footer-inner::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 160px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3fb950, #58a6ff, #f0c14b);
+  box-shadow: 0 0 18px rgba(240,193,75,0.55);
+}
+.footer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.footer-block-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.15rem 1.5rem;
+}
+.footer-row {
+  display: flex;
+  gap: 0.25rem;
+}
+.footer-label {
+  min-width: 52px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+.footer-value {
+  white-space: nowrap;
+  color: rgba(226,232,240,0.9);
+}
+.footer-strong {
+  font-weight: 700;
+  color: #f0c14b;
+}
+.footer-meta {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.footer-dot {
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .footer-meta {
+    margin-left: 0;
+  }
+}
 /* ---- Fiche de présence ---- */
 .fiche-controls {
   display: flex;

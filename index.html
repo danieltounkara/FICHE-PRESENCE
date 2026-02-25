@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestion de Présence - KABOUCARIA 2026</title>
+  <title>Gestion de Présence - ETS KABOUCARIA 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
   <div class="app">
     <header class="header">
       <div class="header-inner">
-        <h1 class="logo">GESTION DE PRÉSENCE<br><span>KABOUCARIA 2026</span></h1>
+        <h1 class="logo">GESTION DE PRÉSENCE<br><span> ETS KABOUCARIA 2026</span></h1>
         <nav class="nav">
           <button type="button" class="nav-btn active" data-page="dashboard">Dashboard</button>
           <button type="button" class="nav-btn" data-page="fiche">Fiche de présence</button>
@@ -141,6 +141,7 @@
         <div class="fiche-controls">
           <label>Mois : <input type="month" id="paiement-mois" /></label>
           <button type="button" class="btn btn-primary" id="btn-generer-tous-bulletins">Générer tous les bulletins PDF</button>
+          <button type="button" class="btn btn-secondary" id="btn-liste-paiement-pdf">Exporter la liste en PDF</button>
         </div>
         <div class="card table-card">
           <div class="table-wrap">
@@ -169,6 +170,9 @@
       <!-- Liste des employés -->
       <section id="page-employes" class="page">
         <h2 class="page-title">Liste des employés</h2>
+        <div class="fiche-controls">
+          <label>Rechercher : <input type="text" id="employes-search" placeholder="Nom, service, téléphone..."></label>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -235,6 +239,44 @@
         </form>
       </section>
     </main>
+
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <div class="footer-block">
+          <div class="footer-row">
+            <span class="footer-label">Nom :</span>
+            <span class="footer-value">ETABLISSEMENTS KABOUKARIA ET FILS</span>
+          </div>
+          <div class="footer-row">
+            <span class="footer-label">Adresse :</span>
+            <span class="footer-value">SIGUIRI CENTRE SIGUIRIKOURA II</span>
+          </div>
+        </div>
+        <div class="footer-block footer-block-grid">
+          <div class="footer-row">
+            <span class="footer-label">NIF :</span>
+            <span class="footer-value">661 827 782</span>
+          </div>
+          <div class="footer-row">
+            <span class="footer-label">Clé TVA :</span>
+            <span class="footer-value footer-strong">9C</span>
+          </div>
+          <div class="footer-row">
+            <span class="footer-label">RCCM :</span>
+            <span class="footer-value">GN.TCC.2023.A.00518</span>
+          </div>
+          <div class="footer-row">
+            <span class="footer-label">TEL :</span>
+            <span class="footer-value">628 559 934</span>
+          </div>
+        </div>
+        <div class="footer-meta">
+          <span>Gestion de présence &amp; salaires – Kaboucaria</span>
+          <span class="footer-dot">•</span>
+          <span id="footer-year">2026</span>
+        </div>
+      </div>
+    </footer>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
